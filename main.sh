@@ -181,6 +181,8 @@ cat <<'EOF' > "$html/livecontrol.html"
     </div>
 
     <script>
+        const basePath = "{{ .base_path }}";   
+        const API_PREFIX = basePath + "panel/livecontrol/api";
         let logIntervals = {};
         // 切换日志展开/收起
         function toggleLog(service) {
@@ -208,7 +210,7 @@ cat <<'EOF' > "$html/livecontrol.html"
 
         // 获取服务状态
         function loadStatus() {
-            fetch("/panel/livecontrol/api/status")
+            fetch(API_PREFIX + "/status")
                 .then(res => res.json())
                 .then(data => {
                     document.getElementById("status-douyin").textContent = data.status["douyinrecorder.service"];
@@ -222,7 +224,7 @@ cat <<'EOF' > "$html/livecontrol.html"
 
         // 控制服务
         function controlService(service, action) {
-            fetch("/panel/livecontrol/api/action", {
+            fetch(API_PREFIX + "/action", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ service: service, action: action })
@@ -236,7 +238,7 @@ cat <<'EOF' > "$html/livecontrol.html"
 
         // 加载日志
         function loadLogs(service) {
-            fetch("/panel/livecontrol/api/logs/" + service)
+            fetch(API_PREFIX + "/logs/" + service)
                 .then(res => res.json())
                 .then(data => {
                     const target = service === "douyinrecorder.service" ? "log-douyin" : "log-pcs";
@@ -248,7 +250,7 @@ cat <<'EOF' > "$html/livecontrol.html"
 
         // 加载 URL 配置
         function loadURLConfig() {
-            fetch("/panel/livecontrol/api/urlconfig")
+            fetch(API_PREFIX + "/urlconfig")
                 .then(res => res.json())
                 .then(data => {
                     const listBox = document.getElementById("url-list");
@@ -281,7 +283,7 @@ cat <<'EOF' > "$html/livecontrol.html"
                 alert("请输入URL");
                 return;
             }
-            fetch("/panel/livecontrol/api/urlconfig", {
+            fetch(API_PREFIX + "/urlconfig", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ url: url })
@@ -297,7 +299,7 @@ cat <<'EOF' > "$html/livecontrol.html"
         // 删除 URL 配置
         function deleteURL(url) {
             if (!confirm("确定删除该URL吗？\n" + url)) return;
-            fetch("/panel/livecontrol/api/urlconfig", {
+            fetch(API_PREFIX + "/urlconfig", {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ url: url })
