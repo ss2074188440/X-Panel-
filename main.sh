@@ -25,7 +25,7 @@ awk '
 }
 /return engine, nil/ {
     print indent "//add for nick"
-    print indent "controller.NewLiveControlController(g)"
+    print indent "controller.NewLiveControlController(g, s.settingService)"
 }
 { print }
 ' "$web_go" > "$web_go.tmp" && mv "$web_go.tmp" "$web_go"
@@ -331,7 +331,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-
+	"x-ui/web/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -342,10 +342,14 @@ const (
 	URLConfigPath = "/root/DouyinLiveRecorder/config/URL_config.ini"
 )
 
-type LiveControlController struct{}
+type LiveControlController struct{
+	settingService service.SettingService
+}
 
-func NewLiveControlController(g *gin.RouterGroup) *LiveControlController {
-	lc := &LiveControlController{}
+func NewLiveControlController(g *gin.RouterGroup, settingService service.SettingService) *LiveControlController {
+	lc := &LiveControlController{
+            settingService: settingService,
+        }
 
 	// 页面路由
 	g.GET("/panel/livecontrol", lc.page)
@@ -357,8 +361,8 @@ func NewLiveControlController(g *gin.RouterGroup) *LiveControlController {
 		api.POST("/action", lc.serviceAction) // 启动/停止/重启
 		api.GET("/logs/:service", lc.getLogs) // 读取日志
 		api.GET("/urlconfig", lc.getURLConfig) // 读取 URL 配置
-                api.POST("/urlconfig", lc.saveURLConfig) // 保存 URL 配置补上这一行
-                api.DELETE("/urlconfig", lc.deleteURLConfig) // 删除 URL 配置
+        api.POST("/urlconfig", lc.saveURLConfig) // 保存 URL 配置补上这一行
+        api.DELETE("/urlconfig", lc.deleteURLConfig) // 删除 URL 配置
 	}
 
 	return lc
@@ -366,7 +370,14 @@ func NewLiveControlController(g *gin.RouterGroup) *LiveControlController {
 
 // 页面渲染
 func (lc *LiveControlController) page(c *gin.Context) {
-	c.HTML(http.StatusOK, "livecontrol.html", gin.H{})
+        basePath, err := lc.settingService.GetBasePath()
+        if err != nil {
+            // 如果出错，给个默认值，避免页面打不开
+            basePath = "/"
+        }
+	c.HTML(http.StatusOK, "livecontrol.html", gin.H{ 
+            "base_path": basePath,
+        })
 }
 
 // 获取服务状态
@@ -584,6 +595,7 @@ func (lc *LiveControlController) deleteURLConfig(c *gin.Context) {
 
     c.JSON(http.StatusOK, gin.H{"message": "删除成功"})
 }
+
 EOF
 
 #编译生成X-Panel面板x-ui
