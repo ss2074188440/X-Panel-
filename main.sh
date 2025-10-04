@@ -618,11 +618,17 @@ sudo rm -rf /usr/local/go
 cul -OL /usr/local $2
 cd /usr/local 
 tar -xvf *.tar
-cd /usr/local/x-ui
-rm -r x-ui
+cd /usr/local/x-ui-linux-amd64
+mv x-ui /usr/local
+cd /usr/local
+rm -rf x-ui-linux-amd64
 cp /root/X-Panel*/x-ui .
-cp /usr/local/x-ui/x-ui.sh /usr/local/bin/
+cp /usr/local/x-ui/x-ui.sh /usr/local/bin/x-ui
 cp x-ui.service /etc/systemd/system/
+chmod +x /usr/local/x-ui/x-ui
+chmod +x /usr/local/x-ui/x-ui.sh
+chmod +x /usr/local/bin/x-ui
+chmod +x /usr/local/x-ui/bin/xray-linux-amd64
 #########################################################x-ui部署###############################################################
 
 
