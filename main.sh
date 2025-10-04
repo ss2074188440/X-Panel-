@@ -1,15 +1,15 @@
 #!/bin/bash
 set -e
-url=$1
-url=$2
-url=$3
+url1=$1
+url2=$2
+url3=$3
 ######必要软件
 apt update -y && apt install -y curl && apt install -y unzip && apt install -y socat
 ######必要软件
 mkdir -p /root/logs
 #########################################################x-ui部署###############################################################
 cd /root
-curl -OL $url
+curl -OL $url1
 tar -xvf *.tar.gz
 rm -rf *.tar.gz
 cd X-Panel*
@@ -705,7 +705,7 @@ cd -
 sudo rm -rf /usr/local/go
 
 #下载原xeefei中封装好的X-Panel
-cul -L -o /usr/local/x-ui-linux-amd64.tar.gz $2
+cul -L -o /usr/local/x-ui-linux-amd64.tar.gz $url2
 cd /usr/local 
 tar -xvf *.tar.gz
 cd /usr/local/x-ui
@@ -741,7 +741,7 @@ echo "https://www.tiktok.com/@user68358021784866/live" >> config/URL_config.ini
 
 ########下载BaiduPcs-go#######
 cd /root
-curl -OL $3
+curl -OL $url3
 unzip *.zip
 rm -rf *.zip
 cd Baidu*
