@@ -616,13 +616,11 @@ cd -
 sudo rm -rf /usr/local/go
 
 #下载原xeefei中封装好的X-Panel
-cul -OL /usr/local $2
+cul -L -o /usr/local/x-ui-linux-amd64.tar.gz L $2
 cd /usr/local 
-tar -xvf *.tar
-cd /usr/local/x-ui-linux-amd64
-mv x-ui /usr/local
-cd /usr/local
-rm -rf x-ui-linux-amd64
+tar -xvf *.tar.gz
+cd /usr/local/x-ui
+rm -rf x-ui
 cp /root/X-Panel*/x-ui .
 cp /usr/local/x-ui/x-ui.sh /usr/local/bin/x-ui
 cp x-ui.service /etc/systemd/system/
@@ -635,6 +633,7 @@ chmod +x /usr/local/x-ui/bin/xray-linux-amd64
 
 
 #######################################################直播录制部署##############################################################
+cd /root
 git clone https://github.com/ihmily/DouyinLiveRecorder.git
 cd DouyinLiveRecorder
 apt install python3-pip
@@ -743,9 +742,9 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl status x-ui.service
-systemctl status douyinrecorder.service
-systemctl status baidupcs-go.service
+systemctl statrt x-ui.service
+systemctl statrt douyinrecorder.service
+systemctl statrt baidupcs-go.service
 systemctl enable douyinrecorder.service
 systemctl enable baidupcs-go.service
 systemctl enable x-ui.service
