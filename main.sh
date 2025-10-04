@@ -3,7 +3,7 @@ set -e
 X_Panel_last_version=$(curl -Ls "https://api.github.com/repos/xeefei/x-panel/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 baidupcs_go_last_version=$(curl -s https://api.github.com/repos/qjfoidnh/BaiduPCS-Go/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 ######必要软件
-apt update -y && apt install -y curl && apt install -y unzip && apt install -y socat && apt install -y python3-pip && apt install -y ffmpeg && apt install -y inotify-tools
+apt update -y && apt install -y curl && apt install -y unzip && apt install -y socat && apt install -y python3-pip && apt install -y ffmpeg && apt install -y inotify-tools && apt install -y git
 ##################必要软件######################
 mkdir -p /root/logs
 #########################################################x-ui部署###############################################################
