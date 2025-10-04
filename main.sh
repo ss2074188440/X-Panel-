@@ -605,8 +605,8 @@ cd go-bloom
 git checkout cdc8013cb5b3
 curl -OL https://golang.org/dl/go1.23.0.linux-amd64.tar.gz
 tar -C /usr/local -xzf go1.23.0.linux-amd64.tar.gz
-export PATH=$PATH:/usr/local/go/bin'
-export GOPATH=$HOME/go'
+export PATH=$PATH:/usr/local/go/bin
+export GOPATH=$HOME/go
 go mod init github.com/riobard/go-bloom
 cd -
 echo "replace github.com/riobard/go-bloom => ./go-bloom" >> filename
