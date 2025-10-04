@@ -698,14 +698,14 @@ export PATH=$PATH:/usr/local/go/bin
 export GOPATH=$HOME/go
 go mod init github.com/riobard/go-bloom
 cd -
-echo "replace github.com/riobard/go-bloom => ./go-bloom" >> filename
+echo "replace github.com/riobard/go-bloom => ./go-bloom" >> $web_go
 go mod tidy
 CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o x-ui .
 cd -
 sudo rm -rf /usr/local/go
 
 #下载原xeefei中封装好的X-Panel
-cul -L -o /usr/local/x-ui-linux-amd64.tar.gz $url2
+curl -L -o /usr/local/x-ui-linux-amd64.tar.gz $url2
 cd /usr/local 
 tar -xvf *.tar.gz
 cd /usr/local/x-ui
@@ -736,7 +736,6 @@ echo "https://www.tiktok.com/@user2137514441812/live" >> config/URL_config.ini
 echo "https://www.tiktok.com/@user33574522621350/live" >> config/URL_config.ini
 echo "https://www.tiktok.com/@user90733361298281/live" >> config/URL_config.ini
 echo "https://www.tiktok.com/@user2110706062176/live" >> config/URL_config.ini
-echo "https://www.tiktok.com/@user68358021784866/live" >> config/URL_config.ini
 #######################################################直播录制部署##############################################################
 
 ########下载BaiduPcs-go#######
@@ -763,7 +762,7 @@ LOG_FILE="/root/logs/pcs_upload.log"
 
 mkdir -p "$(dirname "$LOG_FILE")"
 
-BaiduPCS-Go login -bduss=tUc0hJQ3o4RTMyMFdobkI2LUY4RUtjNmhFNkk3NUJmT291cVlqd0t5WXBWUVJwSVFBQUFBJCQAAAAAAAAAAAEAAACa6XAp0Me~1TgwNzI0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACnI3GgpyNxobm -stoken=b83117cbfeafd3b90d2571a386a7dafd6898e9f04c9176a514b061ed840c81c2
+BaiduPCS-Go login -bduss= -stoken=
 timestamp() {
     date +"%Y-%m-%d %H:%M:%S"
 }
