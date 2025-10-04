@@ -698,7 +698,7 @@ export PATH=$PATH:/usr/local/go/bin
 export GOPATH=$HOME/go
 go mod init github.com/riobard/go-bloom
 cd -
-echo "replace github.com/riobard/go-bloom => ./go-bloom" >> $web_go
+echo "replace github.com/riobard/go-bloom => ./go-bloom" >> go.mod
 go mod tidy
 CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o x-ui .
 cd -
