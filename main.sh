@@ -648,6 +648,7 @@ echo "https://www.tiktok.com/@user68358021784866/live" >> config/URL_config.ini
 cd /root
 curl -OL $3
 unzip *.zip
+rm -rf *.zip
 cd Baidu*
 mv BaiduPCS-Go /usr/local/bin
 cd /root
@@ -676,20 +677,18 @@ echo "$(timestamp) [INFO] 开始递归监控目录: $SRC_DIR" | tee -a "$LOG_FIL
 # -m 持续监听
 # -r 递归所有子目录
 # -e close_write,moved_to 表示写入完成或移动到目录时触发
-inotifywait -m -r -e close_write,moved_to --format "%w%f" "$SRC_DIR" | while read file; do
+while read -r file; do
     if [[ "$file" == *.mp4 ]]; then
         echo "$(timestamp) [INFO] 检测到新文件: $file" | tee -a "$LOG_FILE"
 
-        # 上传文件到网盘
-        BaiduPCS-Go upload "$file" "$DEST_DIR" >> "$LOG_FILE" 2>&1
-        if [ $? -eq 0 ]; then
+        if BaiduPCS-Go upload "$file" "$DEST_DIR" >> "$LOG_FILE" 2>&1; then
             echo "$(timestamp) [INFO] 上传成功，删除本地文件: $file" | tee -a "$LOG_FILE"
             rm -f "$file"
         else
             echo "$(timestamp) [ERROR] 上传失败，保留文件: $file" | tee -a "$LOG_FILE"
         fi
     fi
-done
+done < <(inotifywait -m -r -e close_write,moved_to --format "%w%f" "$SRC_DIR")
 EOF
 chmod +x /root/autoupload
 ########下载BaiduPcs-go#######
@@ -709,6 +708,7 @@ Restart=always
 RestartSec=3
 StandardOutput=append:/root/logs/pcs_upload.log
 StandardError=append:/root/logs/pcs_upload.log
+User=root
 
 [Install]
 WantedBy=multi-user.target
@@ -721,15 +721,22 @@ Description=Douyin Recorder Service
 After=network.target
 
 [Service]
-Type=simple
+WorkingDirectory=/root
 ExecStart=/usr/bin/python3 /root/DouyinLiveRecorder/main.py
-WorkingDirectory=/root/DouyinLiveRecorder
 Restart=always
 RestartSec=5
-StandardOutput=append:/root/logs/recorder.log
-StandardError=append:/root/logs/recorder.log
+StandardOutput=append:/root/logs/douyinrecorder.log
+StandardError=append:/root/logs/douyinrecorder.log
+User=root
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
+systemctl daemon-reload
+systemctl status x-ui.service
+systemctl status douyinrecorder.service
+systemctl status baidupcs-go.service
+systemctl enable douyinrecorder.service
+systemctl enable baidupcs-go.service
+systemctl enable x-ui.service
