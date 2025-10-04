@@ -6,6 +6,7 @@ url=$3
 ######必要软件
 apt update -y && apt install -y curl && apt install -y unzip && apt install -y socat
 ######必要软件
+mkdir -p /root/logs
 #########################################################x-ui部署###############################################################
 cd /root
 curl -OL $url
@@ -659,6 +660,7 @@ cd Baidu*
 mv BaiduPCS-Go /usr/local/bin
 cd /root
 rm -rf Baidu*
+apt install -y inotify-tools
 
 cat << 'EOF' > /root/autoupload
 #!/bin/bash
