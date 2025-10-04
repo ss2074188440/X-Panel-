@@ -649,6 +649,7 @@ echo "https://www.tiktok.com/@user33574522621350/live" >> config/URL_config.ini
 echo "https://www.tiktok.com/@user90733361298281/live" >> config/URL_config.ini
 echo "https://www.tiktok.com/@user2110706062176/live" >> config/URL_config.ini
 echo "https://www.tiktok.com/@user68358021784866/live" >> config/URL_config.ini
+timeout -s KILL 180 python3 /root/DouyinLiveRecorder/main.py
 #######################################################直播录制部署##############################################################
 
 ########下载BaiduPcs-go#######
