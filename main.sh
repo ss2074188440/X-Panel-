@@ -64,12 +64,15 @@ cat <<'EOF' > "$html/livecontrol.html"
             flex-direction: column;
             height: calc(100vh - 60px);
             padding: 20px;
+	    background: #121212;   /* 🔴暗黑背景 */
+            color: #eee;           /* 🔴浅色文字 */
         }
         .panel {
             padding: 20px;
-            border: 1px solid #ddd;
-            background: #fff;
-            margin-bottom: 20px;
+            border: 1px solid #333;
+            background: #1e1e1e;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+	    margin-bottom: 20px;
         }
         .status {
             margin: 10px 0;
@@ -82,10 +85,11 @@ cat <<'EOF' > "$html/livecontrol.html"
             cursor: pointer;
             font-weight: bold;
             padding: 8px;
-            border-bottom: 1px solid #ccc;
-            background: #f8f8f8;
+            border-bottom: 1px solid #333;
+            background: #2a2a2a;
             display: flex;
             align-items: center;
+	    color: #eee;
         }
         .log-header span {
             margin-left: 8px;
@@ -98,12 +102,42 @@ cat <<'EOF' > "$html/livecontrol.html"
         }
         .log-content {
             display: none;
-            background: #111;
-            color: #eee;
+            background: #000;
+            color: #0f0;
             padding: 10px;
             white-space: pre-wrap;
             height: 200px;
             overflow-y: auto;
+	    font-family: monospace;
+        }
+        .services-row {
+            display: flex;
+            gap: 20px; /* 两个卡片之间的间距 */
+        }
+        .service-box {
+            flex: 1;
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        input[type="text"] {
+            background: #2a2a2a;  /* ✅ 深色背景 */
+            color: #eee;          /* ✅ 浅色文字 */
+            border: 1px solid #444;
+            padding: 6px;
+            border-radius: 4px;
+        }
+        
+        button {
+            background: #444;     /* ✅ 深色按钮 */
+            color: #eee;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #666;
         }
         /* 🔴 URL 删除按钮样式 */
         #url-list button {
@@ -126,23 +160,28 @@ cat <<'EOF' > "$html/livecontrol.html"
         <!-- 服务状态与控制 -->
         <div class="panel">
             <h3>服务状态与控制</h3>
+	    <div class="services-row">
+                <div class="service-box">
+                    <div class="status">
+                        Douyin Recorder 状态: <span id="status-douyin">加载中...</span>
+                    </div>
+                    <div class="btn-group">
+                        <button onclick="controlService('douyinrecorder.service','start')">启动</button>
+                        <button onclick="controlService('douyinrecorder.service','stop')">停止</button>
+                        <button onclick="controlService('douyinrecorder.service','restart')">重启</button>
+                    </div>
+	        </div>
 
-            <div class="status">
-                Douyin Recorder 状态: <span id="status-douyin">加载中...</span>
-            </div>
-            <div class="btn-group">
-                <button onclick="controlService('douyinrecorder.service','start')">启动</button>
-                <button onclick="controlService('douyinrecorder.service','stop')">停止</button>
-                <button onclick="controlService('douyinrecorder.service','restart')">重启</button>
-            </div>
-
-            <div class="status" style="margin-top:15px;">
-                PCS Upload 状态: <span id="status-pcs">加载中...</span>
-            </div>
-            <div class="btn-group">
-                <button onclick="controlService('baidupcs-go.service','start')">启动</button>
-                <button onclick="controlService('baidupcs-go.service','stop')">停止</button>
-                <button onclick="controlService('baidupcs-go.service','restart')">重启</button>
+                <div class="service-box">
+                    <div class="status" style="margin-top:15px;">
+                        PCS Upload 状态: <span id="status-pcs">加载中...</span>
+                    </div>
+                    <div class="btn-group">
+                        <button onclick="controlService('baidupcs-go.service','start')">启动</button>
+                        <button onclick="controlService('baidupcs-go.service','stop')">停止</button>
+                        <button onclick="controlService('baidupcs-go.service','restart')">重启</button>
+                    </div>
+	        </div>
             </div>
         </div>
 
@@ -163,11 +202,11 @@ cat <<'EOF' > "$html/livecontrol.html"
         <!-- 日志显示 -->
         <div class="panel">
             <h3>日志</h3>
-
             <!-- Douyin Recorder 日志 -->
             <div class="log-header" onclick="toggleLog('douyin')">
                 <span class="arrow" id="arrow-douyin">▶</span>
                 <span>Douyin Recorder 日志</span>
+		<button onclick="clearLogs('douyinrecorder.service');event.stopPropagation();" style="margin-left:auto;">清空</button>
             </div>
             <pre id="log-douyin" class="log-content">点击展开查看日志</pre>
 
@@ -175,6 +214,7 @@ cat <<'EOF' > "$html/livecontrol.html"
             <div class="log-header" style="margin-top:10px;" onclick="toggleLog('pcs')">
                 <span class="arrow" id="arrow-pcs">▶</span>
                 <span>PCS Upload 日志</span>
+		<button onclick="clearLogs('baidupcs-go.service');event.stopPropagation();" style="margin-left:auto;">清空</button>
             </div>
             <pre id="log-pcs" class="log-content">点击展开查看日志</pre>
         </div>
@@ -311,8 +351,26 @@ cat <<'EOF' > "$html/livecontrol.html"
                     loadURLConfig(); // 删除后刷新列表
                 });
         }
-
-
+        // 清空日志
+        function clearLogs(service) {
+            if (!confirm("确定要清空该日志吗？")) return;
+            fetch(API_PREFIX + "/logs/clear", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ service: service })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message || data.error);
+                if (service === "douyinrecorder.service") {
+                    document.getElementById("log-douyin").textContent = "";
+		    loadLogs(service);   //清空后刷新
+                } else if (service === "baidupcs-go.service") {
+                    document.getElementById("log-pcs").textContent = "";
+		    loadLogs(service);   //清空后刷新
+                }
+            });
+        }
         // 初始化
         loadStatus();
         loadURLConfig();
@@ -362,8 +420,9 @@ func NewLiveControlController(g *gin.RouterGroup, settingService service.Setting
 		api.POST("/action", lc.serviceAction) // 启动/停止/重启
 		api.GET("/logs/:service", lc.getLogs) // 读取日志
 		api.GET("/urlconfig", lc.getURLConfig) // 读取 URL 配置
-        api.POST("/urlconfig", lc.saveURLConfig) // 保存 URL 配置补上这一行
-        api.DELETE("/urlconfig", lc.deleteURLConfig) // 删除 URL 配置
+                api.POST("/urlconfig", lc.saveURLConfig) // 保存 URL 配置补上这一行
+                api.DELETE("/urlconfig", lc.deleteURLConfig) // 删除 URL 配置
+                api.POST("/logs/clear", lc.clearLogs) // 🔹新增或替换原来的日志清空接口
 	}
 
 	return lc
@@ -470,6 +529,37 @@ func (lc *LiveControlController) getLogs(c *gin.Context) {
 		"logs": lines,
 	})
 }
+
+// 清空日志
+func (lc *LiveControlController) clearLogs(c *gin.Context) {
+    var req struct {
+        Service string `json:"service"` // 接收要清空的服务
+    }
+    if err := c.ShouldBindJSON(&req); err != nil || req.Service == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+        return
+    }
+
+    var path string
+    switch req.Service {
+    case "douyinrecorder.service", "douyin":
+        path = DouyinLogPath
+    case "baidupcs-go.service", "pcs":
+        path = PCSLogPath
+    default:
+        c.JSON(http.StatusBadRequest, gin.H{"error": "未知服务"})
+        return
+    }
+
+    cmd := exec.Command("truncate", "-s", "0", path)
+    if err := cmd.Run(); err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "日志清空失败: " + err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("%s 日志已清空", req.Service)})
+}
+
 
 // 读取 URL 配置
 func (lc *LiveControlController) getURLConfig(c *gin.Context) {
@@ -596,7 +686,6 @@ func (lc *LiveControlController) deleteURLConfig(c *gin.Context) {
 
     c.JSON(http.StatusOK, gin.H{"message": "删除成功"})
 }
-
 EOF
 
 #编译生成X-Panel面板x-ui
@@ -616,7 +705,7 @@ cd -
 sudo rm -rf /usr/local/go
 
 #下载原xeefei中封装好的X-Panel
-cul -L -o /usr/local/x-ui-linux-amd64.tar.gz L $2
+cul -L -o /usr/local/x-ui-linux-amd64.tar.gz $2
 cd /usr/local 
 tar -xvf *.tar.gz
 cd /usr/local/x-ui
@@ -639,7 +728,7 @@ cd DouyinLiveRecorder
 apt install python3-pip
 pip3 install -r requirements.txt
 apt update 
-apt install ffmpeg
+apt install -y ffmpeg
 echo "https://www.tiktok.com/@user68358021784866/live" >> config/URL_config.ini
 echo "https://www.tiktok.com/@faithe322541/live" >> config/URL_config.ini
 echo "https://www.tiktok.com/@user7528178744418/live" >> config/URL_config.ini
@@ -648,7 +737,6 @@ echo "https://www.tiktok.com/@user33574522621350/live" >> config/URL_config.ini
 echo "https://www.tiktok.com/@user90733361298281/live" >> config/URL_config.ini
 echo "https://www.tiktok.com/@user2110706062176/live" >> config/URL_config.ini
 echo "https://www.tiktok.com/@user68358021784866/live" >> config/URL_config.ini
-timeout -s KILL 180 python3 /root/DouyinLiveRecorder/main.py
 #######################################################直播录制部署##############################################################
 
 ########下载BaiduPcs-go#######
@@ -742,9 +830,9 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl statrt x-ui.service
-systemctl statrt douyinrecorder.service
-systemctl statrt baidupcs-go.service
+systemctl start x-ui.service
+systemctl start douyinrecorder.service
+systemctl start baidupcs-go.service
 systemctl enable douyinrecorder.service
 systemctl enable baidupcs-go.service
 systemctl enable x-ui.service
