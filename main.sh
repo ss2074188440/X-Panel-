@@ -1,15 +1,14 @@
 #!/bin/bash
 set -e
-url1=$1
-url2=$2
-url3=$3
+X_Panel_last_version=$(curl -Ls "https://api.github.com/repos/xeefei/x-panel/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+baidupcs_go_last_version=$(curl -s https://api.github.com/repos/qjfoidnh/BaiduPCS-Go/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 ######必要软件
-apt update -y && apt install -y curl && apt install -y unzip && apt install -y socat
-######必要软件
+apt update -y && apt install -y curl && apt install -y unzip && apt install -y socat && apt install -y python3-pip && apt install -y ffmpeg && apt install -y inotify-tools
+##################必要软件######################
 mkdir -p /root/logs
 #########################################################x-ui部署###############################################################
 cd /root
-curl -OL $url1
+curl -LO https://github.com/xeefei/X-Panel/archive/refs/tags/${X_Panel_last_version}.tar.gz
 tar -xvf *.tar.gz
 rm -rf *.tar.gz
 cd X-Panel*
@@ -692,7 +691,7 @@ EOF
 git clone https://github.com/riobard/go-bloom.git
 cd go-bloom
 git checkout cdc8013cb5b3
-curl -OL https://golang.org/dl/go1.23.0.linux-amd64.tar.gz
+curl -LO https://golang.org/dl/go1.23.0.linux-amd64.tar.gz
 tar -C /usr/local -xzf go1.23.0.linux-amd64.tar.gz
 export PATH=$PATH:/usr/local/go/bin
 export GOPATH=$HOME/go
@@ -705,7 +704,7 @@ cd -
 sudo rm -rf /usr/local/go
 
 #下载原xeefei中封装好的X-Panel
-curl -L -o /usr/local/x-ui-linux-amd64.tar.gz $url2
+curl -L -o /usr/local/x-ui-linux-amd64.tar.gz https://github.com/xeefei/X-Panel/releases/download/${X_Panel_last_version}/x-ui-linux-amd64.tar.gz
 cd /usr/local 
 tar -xvf *.tar.gz
 cd /usr/local/x-ui
@@ -725,10 +724,7 @@ chmod +x /usr/local/x-ui/bin/xray-linux-amd64
 cd /root
 git clone https://github.com/ihmily/DouyinLiveRecorder.git
 cd DouyinLiveRecorder
-apt install python3-pip
 pip3 install -r requirements.txt
-apt update 
-apt install -y ffmpeg
 echo "https://www.tiktok.com/@user68358021784866/live" >> config/URL_config.ini
 echo "https://www.tiktok.com/@faithe322541/live" >> config/URL_config.ini
 echo "https://www.tiktok.com/@user7528178744418/live" >> config/URL_config.ini
@@ -740,14 +736,13 @@ echo "https://www.tiktok.com/@user2110706062176/live" >> config/URL_config.ini
 
 ########下载BaiduPcs-go#######
 cd /root
-curl -OL $url3
+curl -LO https://github.com/qjfoidnh/BaiduPCS-Go/releases/download/${baidupcs_go_last_version}/BaiduPCS-Go-${baidupcs_go_last_version}-linux-amd64.zip
 unzip *.zip
 rm -rf *.zip
 cd Baidu*
 mv BaiduPCS-Go /usr/local/bin
 cd /root
 rm -rf Baidu*
-apt install -y inotify-tools
 
 cat << 'EOF' > /root/autoupload
 #!/bin/bash
