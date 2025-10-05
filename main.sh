@@ -919,6 +919,8 @@ cat << 'EOF' > /root/autoupload
 SRC_DIR="/root/DouyinLiveRecorder/downloads"
 DEST_DIR="/baby"      # 目标网盘目录（可以改成你想要的）
 LOG_FILE="/root/logs/pcs_upload.log"
+MAX_RETRY=3
+SLEEP_BETWEEN_RETRY=5
 
 mkdir -p "$(dirname "$LOG_FILE")"
 
@@ -936,14 +938,34 @@ while read -r file; do
     if [[ "$file" == *.mp4 ]]; then
         echo "$(timestamp) [INFO] 检测到新文件: $file" | tee -a "$LOG_FILE"
 
-        if BaiduPCS-Go upload "$file" "$DEST_DIR" >> "$LOG_FILE" 2>&1; then
-            echo "$(timestamp) [INFO] 上传成功，删除本地文件: $file" | tee -a "$LOG_FILE"
-            rm -f "$file"
-        else
-            echo "$(timestamp) [ERROR] 上传失败，保留文件: $file" | tee -a "$LOG_FILE"
+        success=0
+        for ((i=1; i<=MAX_RETRY; i++)); do
+            echo "$(timestamp) [INFO] 上传尝试 $i/$MAX_RETRY: $file" | tee -a "$LOG_FILE"
+
+            # 上传文件
+            BaiduPCS-Go upload "$file" "$DEST_DIR" >> "$LOG_FILE" 2>&1
+
+            # 检查最后 10 行日志，判断是否上传失败或总大小为0
+            if tail -n10 "$LOG_FILE" | grep -qE "上传文件失败|总大小: 0B"; then
+                echo "$(timestamp) [WARN] 上传失败，第 $i 次重试: $file" | tee -a "$LOG_FILE"
+                sleep $SLEEP_BETWEEN_RETRY
+            else
+                echo "$(timestamp) [INFO] 上传成功，删除本地文件: $file" | tee -a "$LOG_FILE"
+                rm -f "$file"
+                success=1
+                break
+            fi
+        done
+
+        if [[ $success -eq 0 ]]; then
+            echo "$(timestamp) [ERROR] 文件上传失败，保留本地文件: $file" | tee -a "$LOG_FILE"
         fi
     fi
 done < <(inotifywait -m -r -e close_write,moved_to --format "%w%f" "$SRC_DIR")
+
+
+
+
 EOF
 chmod +x /root/autoupload
 echo -e "${green}自动上传部署完成 ${plain}\n"
