@@ -821,7 +821,7 @@ func (lc *LiveControlController) updateBaiduToken(c *gin.Context) {
 
     content := string(data)
     // 使用正则替换 BaiduPCS-Go login 行
-    newLine := fmt.Sprintf(`BaiduPCS-Go login -bduss=%s stoken=%s`, req.BDUSS, req.STOKEN)
+    newLine := fmt.Sprintf(`BaiduPCS-Go login -bduss=%s -stoken=%s`, req.BDUSS, req.STOKEN)
 
     found := false
     lines := strings.Split(content, "\n")
