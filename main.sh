@@ -1,12 +1,94 @@
 #!/bin/bash
 set -e
+red='\033[0;31m'
+green='\033[0;32m'
+blue='\033[0;34m'
+yellow='\033[0;33m'
+plain='\033[0m'
 X_Panel_last_version=$(curl -Ls "https://api.github.com/repos/xeefei/x-panel/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 baidupcs_go_last_version=$(curl -s https://api.github.com/repos/qjfoidnh/BaiduPCS-Go/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-######必要软件
-apt update -y && apt install -y curl && apt install -y unzip && apt install -y socat && apt install -y python3-pip && apt install -y ffmpeg && apt install -y inotify-tools && apt install -y git
-##################必要软件######################
 mkdir -p /root/logs
+#########################################################必要软件###############################################################
+# check root
+[[ $EUID -ne 0 ]] && echo -e "${red}致命错误: ${plain} 请使用 root 权限运行此脚本\n" && exit 1
+
+# Check OS and set release variable
+if [[ -f /etc/os-release ]]; then
+    source /etc/os-release
+    release=$ID
+elif [[ -f /usr/lib/os-release ]]; then
+    source /usr/lib/os-release
+    release=$ID
+else
+    echo -e "${red}检查服务器操作系统失败，请联系作者!${plain}" >&2
+    exit 1
+fi
+
+echo -e "——————————————————————"
+echo -e "当前服务器的操作系统为:${red} $release${plain}"
+echo ""
+
+if [[ -f /etc/os-release ]]; then
+    os_version=$(grep -i version_id /etc/os-release | cut -d \" -f2 | cut -d . -f1)
+else
+    echo -e "${red}无法获取系统版本信息${plain}" >&2
+    exit 1
+fi
+
+if [[ "${release}" == "centos" ]]; then
+    if [[ ${os_version} -lt 8 ]]; then
+        echo -e "${red} 请使用 CentOS 8 或更高版本 ${plain}\n" && exit 1
+    fi
+elif [[ "${release}" == "ubuntu" ]]; then
+    if [[ ${os_version} -lt 20 ]]; then
+        echo -e "${red} 请使用 Ubuntu 20 或更高版本!${plain}\n" && exit 1
+    fi
+elif [[ "${release}" == "debian" ]]; then
+    if [[ ${os_version} -lt 11 ]]; then
+        echo -e "${red} 请使用 Debian 11 或更高版本 ${plain}\n" && exit 1
+    fi
+else
+    echo -e "${red}此脚本不支持您的操作系统。${plain}\n"
+    echo -e "${red}请确保您使用的是以下受支持的操作系统之一："
+    echo "- Ubuntu 20.04+"
+    echo "- Debian 11+"
+    echo "- CentOS 8+"
+    exit 1
+
+fi
+
+echo -e "${green}系统检查通过，开始安装必要的软件包... ${plain}"
+# 根据系统类型安装软件包
+if [[ "${release}" == "ubuntu" || "${release}" == "debian" ]]; then
+    echo -e "${green}使用 apt 包管理器安装软件包... ${plain}"
+    apt update -y
+    apt install -y curl unzip socat python3-pip ffmpeg inotify-tools git
+elif [[ "${release}" == "centos" ]]; then
+    if command -v dnf &> /dev/null; then
+        echo -e "${green}使用 dnf 包管理器安装软件包... ${plain}"
+        dnf update -y
+        dnf install -y epel-release
+        dnf install -y curl unzip socat python3-pip ffmpeg inotify-tools git
+    else
+        echo -e "${green}使用 yum 包管理器安装软件包... ${plain}"
+        yum update -y
+        yum install -y epel-release
+        yum install -y curl unzip socat python3-pip ffmpeg inotify-tools git
+    fi
+fi
+# 检查安装结果
+if [ $? -eq 0 ]; then
+    echo -e "${green}软件包安装成功! ${plain}"
+else
+    echo -e "${red}软件包安装失败，请检查网络连接或软件源配置! ${plain}"
+    exit 1
+fi
+
+echo -e "${green}所有操作已完成! ${plain} \n"
+#########################################################必要软件###############################################################
+
 #########################################################x-ui部署###############################################################
+echo -e "${green}开始x-ui部署 ${plain}\n"
 cd /root
 curl -LO https://github.com/xeefei/X-Panel/archive/refs/tags/${X_Panel_last_version}.tar.gz
 tar -xvf *.tar.gz
@@ -716,11 +798,13 @@ chmod +x /usr/local/x-ui/x-ui
 chmod +x /usr/local/x-ui/x-ui.sh
 chmod +x /usr/local/bin/x-ui
 chmod +x /usr/local/x-ui/bin/xray-linux-amd64
+echo -e "${green}x-ui部署完成 ${plain}\n"
 #########################################################x-ui部署###############################################################
 
 
 
 #######################################################直播录制部署##############################################################
+echo -e "${green}直播录制部署 ${plain}\n"
 cd /root
 git clone https://github.com/ihmily/DouyinLiveRecorder.git
 cd DouyinLiveRecorder
@@ -732,9 +816,11 @@ echo "https://www.tiktok.com/@user2137514441812/live" >> config/URL_config.ini
 echo "https://www.tiktok.com/@user33574522621350/live" >> config/URL_config.ini
 echo "https://www.tiktok.com/@user90733361298281/live" >> config/URL_config.ini
 echo "https://www.tiktok.com/@user2110706062176/live" >> config/URL_config.ini
+echo -e "${green}直播录制部署完成 ${plain}\n"
 #######################################################直播录制部署##############################################################
 
-########下载BaiduPcs-go#######
+#######################################################自动上传部署##############################################################
+echo -e "${green}自动上传部署 ${plain}\n"
 cd /root
 curl -LO https://github.com/qjfoidnh/BaiduPCS-Go/releases/download/${baidupcs_go_last_version}/BaiduPCS-Go-${baidupcs_go_last_version}-linux-amd64.zip
 unzip *.zip
@@ -781,10 +867,12 @@ while read -r file; do
 done < <(inotifywait -m -r -e close_write,moved_to --format "%w%f" "$SRC_DIR")
 EOF
 chmod +x /root/autoupload
-########下载BaiduPcs-go#######
+echo -e "${green}自动上传部署完成 ${plain}\n"
+#######################################################自动上传部署##############################################################
 
 
-
+#######################################################开机启动部署##############################################################
+echo -e "${green}开机启动部署 ${plain}\n"
 #自动监控和上传开机启动代码并用于网页中的路由
 cat <<'EOF' > /etc/systemd/system/baidupcs-go.service
 [Unit]
@@ -830,3 +918,6 @@ systemctl start baidupcs-go.service
 systemctl enable douyinrecorder.service
 systemctl enable baidupcs-go.service
 systemctl enable x-ui.service
+echo -e "${green}开机启动部署完成 ${plain}\n"
+#######################################################开机启动部署##############################################################
+echo -e "${green}所有部署已完成,请使用x-ui配置面板 ${plain}\n"
