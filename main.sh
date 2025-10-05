@@ -6,7 +6,7 @@ blue='\033[0;34m'
 yellow='\033[0;33m'
 plain='\033[0m'
 X_Panel_last_version=$(curl -Ls "https://api.github.com/repos/xeefei/x-panel/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-baidupcs_go_last_version=$(curl -s https://api.github.com/repos/qjfoidnh/BaiduPCS-Go/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+baidupcs_go_last_version=$(curl -Ls "https://api.github.com/repos/qjfoidnh/BaiduPCS-Go/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 mkdir -p /root/logs
 #########################################################必要软件###############################################################
 # check root
@@ -278,8 +278,17 @@ cat <<'EOF' > "$html/livecontrol.html"
             <!-- 这里是 URL 列表 -->
             <ul id="url-list" style="margin-top:15px; padding-left:20px;"></ul>
         </div>
-
-
+        <!-- 百度网盘凭证配置 -->
+        <div class="panel">
+            <h3>百度网盘凭证配置</h3>
+            <form id="baidu-token-form" onsubmit="saveBaiduToken(event)">
+                <label>BDUSS：</label>
+                <input type="text" id="bduss" placeholder="请输入BDUSS" style="width:100%; margin-bottom:10px;">
+                <label>STOKEN：</label>
+                <input type="text" id="stoken" placeholder="请输入STOKEN" style="width:100%; margin-bottom:10px;">
+                <button type="submit">保存凭证</button>
+            </form>
+        </div>
         <!-- 日志显示 -->
         <div class="panel">
             <h3>日志</h3>
@@ -452,6 +461,28 @@ cat <<'EOF' > "$html/livecontrol.html"
                 }
             });
         }
+        // 保存百度网盘凭证
+        function saveBaiduToken(event) {
+            event.preventDefault();
+            const bduss = document.getElementById("bduss").value.trim();
+            const stoken = document.getElementById("stoken").value.trim();
+        
+            if (!bduss || !stoken) {
+                alert("请完整填写 BDUSS 和 STOKEN！");
+                return;
+            }
+        
+            fetch(API_PREFIX + "/update_baidu_token", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ bduss, stoken })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.message || data.error);
+                })
+                .catch(() => alert("请求失败，请检查服务端连接。"));
+        }
         // 初始化
         loadStatus();
         loadURLConfig();
@@ -504,6 +535,7 @@ func NewLiveControlController(g *gin.RouterGroup, settingService service.Setting
                 api.POST("/urlconfig", lc.saveURLConfig) // 保存 URL 配置补上这一行
                 api.DELETE("/urlconfig", lc.deleteURLConfig) // 删除 URL 配置
                 api.POST("/logs/clear", lc.clearLogs) // 🔹新增或替换原来的日志清空接口
+                api.POST("/update_baidu_token", lc.updateBaiduToken) // 🔹新增百度凭证更新接口
 	}
 
 	return lc
@@ -766,6 +798,53 @@ func (lc *LiveControlController) deleteURLConfig(c *gin.Context) {
     }
 
     c.JSON(http.StatusOK, gin.H{"message": "删除成功"})
+}
+// 更新百度网盘 BDUSS 和 STOKEN
+func (lc *LiveControlController) updateBaiduToken(c *gin.Context) {
+    var req struct {
+        BDUSS  string `json:"bduss"`
+        STOKEN string `json:"stoken"`
+    }
+
+    if err := c.ShouldBindJSON(&req); err != nil || req.BDUSS == "" || req.STOKEN == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误，必须提供 BDUSS 和 STOKEN"})
+        return
+    }
+
+    const uploadScript = "/root/autoupload"
+
+    data, err := os.ReadFile(uploadScript)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "读取脚本失败: " + err.Error()})
+        return
+    }
+
+    content := string(data)
+    // 使用正则替换 BaiduPCS-Go login 行
+    newLine := fmt.Sprintf(`BaiduPCS-Go login -bduss=%s stoken=%s`, req.BDUSS, req.STOKEN)
+
+    found := false
+    lines := strings.Split(content, "\n")
+    for i, line := range lines {
+        if strings.Contains(line, "BaiduPCS-Go login") {
+            lines[i] = newLine
+            found = true
+        }
+    }
+
+    if !found {
+        // 如果没有找到，则追加一行
+        lines = append(lines, newLine)
+    }
+
+    // 写回文件
+    err = os.WriteFile(uploadScript, []byte(strings.Join(lines, "\n")+"\n"), 0755)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "写入脚本失败: " + err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"message": "百度网盘凭证已更新成功"})
 }
 EOF
 
