@@ -545,16 +545,15 @@ func NewLiveControlController(g *gin.RouterGroup, settingService service.Setting
 // 页面渲染
 func (lc *LiveControlController) page(c *gin.Context) {
         user := session.GetLoginUser(c)
-        if user == nil {
-            // ✅ 保持与项目中 inbounds 等模块一致的跳转
-            c.Redirect(http.StatusFound, "/panel/")
-            c.Abort()
-            return
-        }
         basePath, err := lc.settingService.GetBasePath()
         if err != nil {
             // 如果出错，给个默认值，避免页面打不开
             basePath = "/"
+        }
+        if user == nil {
+            c.Redirect(http.StatusFound, basePath+"/panel/")
+            c.Abort()
+            return
         }
 	c.HTML(http.StatusOK, "livecontrol.html", gin.H{ 
             "base_path": basePath,
