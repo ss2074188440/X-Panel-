@@ -503,6 +503,7 @@ import (
 	"os/exec"
 	"strings"
 	"x-ui/web/service"
+	"x-ui/web/session"
 	"github.com/gin-gonic/gin"
 )
 
@@ -543,6 +544,13 @@ func NewLiveControlController(g *gin.RouterGroup, settingService service.Setting
 
 // 页面渲染
 func (lc *LiveControlController) page(c *gin.Context) {
+        user := session.GetLoginUser(c)
+        if user == nil {
+            // ✅ 保持与项目中 inbounds 等模块一致的跳转
+            c.Redirect(http.StatusFound, "/panel/")
+            c.Abort()
+            return
+        }
         basePath, err := lc.settingService.GetBasePath()
         if err != nil {
             // 如果出错，给个默认值，避免页面打不开
