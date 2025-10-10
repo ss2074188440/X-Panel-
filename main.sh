@@ -533,10 +533,10 @@ func NewLiveControlController(g *gin.RouterGroup, settingService service.Setting
 		api.POST("/action", lc.serviceAction) // 启动/停止/重启
 		api.GET("/logs/:service", lc.getLogs) // 读取日志
 		api.GET("/urlconfig", lc.getURLConfig) // 读取 URL 配置
-                api.POST("/urlconfig", lc.saveURLConfig) // 保存 URL 配置补上这一行
-                api.DELETE("/urlconfig", lc.deleteURLConfig) // 删除 URL 配置
-                api.POST("/logs/clear", lc.clearLogs) // 🔹新增或替换原来的日志清空接口
-                api.POST("/update_baidu_token", lc.updateBaiduToken) // 🔹新增百度凭证更新接口
+        api.POST("/urlconfig", lc.saveURLConfig) // 保存 URL 配置补上这一行
+        api.DELETE("/urlconfig", lc.deleteURLConfig) // 删除 URL 配置
+        api.POST("/logs/clear", lc.clearLogs) // 🔹新增或替换原来的日志清空接口
+        api.POST("/update_baidu_token", lc.updateBaiduToken) // 🔹新增百度凭证更新接口
 	}
 
 	return lc
@@ -614,7 +614,16 @@ func (lc *LiveControlController) serviceAction(c *gin.Context) {
         })
         return
     }
-
+    // 🔹启动/停止/重启直播录制时，自动清理 URL_config.ini
+    if req.Service == "douyinrecorder.service" {
+        cleanCmd := exec.Command("bash", "-c", fmt.Sprintf(`sed -i 's%%,.*%%g' "%s"`, URLConfigPath))
+        if err := cleanCmd.Run(); err != nil {
+            // 清理失败时，打印日志但不影响主流程
+            fmt.Printf("清理 URL_config.ini 失败: %v\n", err)
+        } else {
+            fmt.Println("已自动清理 URL_config.ini 中的逗号及其后内容")
+        }
+    }
     c.JSON(http.StatusOK, gin.H{
         "message": fmt.Sprintf("执行成功: %s %s", req.Action, req.Service),
     })
