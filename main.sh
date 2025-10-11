@@ -677,9 +677,7 @@ EOF
         }
         // 🔹启动/停止/重启直播录制时，自动清理 URL_config.ini
         if req.Service == "douyinrecorder.service" {
-            cleanCmd := exec.Command("bash", "-c", fmt.Sprintf(`sed -i 's%,.*%%g' "%s"`, URLConfigPath))
-            if err := cleanCmd.Run(); err != nil {
-                // 清理失败时，打印日志但不影响主流程
+            if err := cleanURLConfig(URLConfigPath); err != nil {
                 fmt.Printf("清理 URL_config.ini 失败: %v\n", err)
             } else {
                 fmt.Println("已自动清理 URL_config.ini 中的逗号及其后内容")
@@ -689,7 +687,42 @@ EOF
             "message": fmt.Sprintf("执行成功: %s %s", req.Action, req.Service),
         })
     }
+    // cleanURLConfig 纯 Go 清理 URL_config.ini
+    func cleanURLConfig(path string) error {
+        file, err := os.Open(path)
+        if err != nil {
+            return err
+        }
+        defer file.Close()
     
+        var lines []string
+        scanner := bufio.NewScanner(file)
+        for scanner.Scan() {
+            line := scanner.Text()
+            if idx := strings.Index(line, ","); idx != -1 {
+                line = line[:idx] // 截取逗号前内容
+            }
+            lines = append(lines, line)
+        }
+        if err := scanner.Err(); err != nil {
+            return err
+        }
+    
+        f, err := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0644)
+        if err != nil {
+            return err
+        }
+        defer f.Close()
+    
+        for _, line := range lines {
+            _, err := f.WriteString(line + "\n")
+            if err != nil {
+                return err
+            }
+        }
+    
+        return nil
+    }
     // 读取日志
     func (lc *LiveControlController) getLogs(c *gin.Context) {
     	service := c.Param("service")
