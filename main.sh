@@ -1042,7 +1042,7 @@ deploy_douyin_recorder() {
     cd /root
     git clone https://github.com/ihmily/DouyinLiveRecorder.git
     cd DouyinLiveRecorder
-    #$PIP_CMD install -r requirements.txt
+    $PIP_CMD install -r requirements.txt
     echo "https://www.tiktok.com/@user68358021784866/live" >> config/URL_config.ini
     echo "https://www.tiktok.com/@faithe322541/live" >> config/URL_config.ini
     echo "https://www.tiktok.com/@user7528178744418/live" >> config/URL_config.ini
