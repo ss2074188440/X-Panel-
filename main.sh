@@ -61,18 +61,18 @@ echo -e "${green}系统检查通过，开始安装必要的软件包... ${plain}
 if [[ "${release}" == "ubuntu" || "${release}" == "debian" ]]; then
     echo -e "${green}使用 apt 包管理器安装软件包... ${plain}"
     apt update -y
-    apt install -y curl unzip socat  git
+    apt install -y curl unzip socat  git build-essential
 elif [[ "${release}" == "centos" ]]; then
     if command -v dnf &> /dev/null; then
         echo -e "${green}使用 dnf 包管理器安装软件包... ${plain}"
         dnf update -y
         dnf install -y epel-release
-        dnf install -y curl unzip socat git
+        dnf install -y curl unzip socat git build-essential
     else
         echo -e "${green}使用 yum 包管理器安装软件包... ${plain}"
         yum update -y
         yum install -y epel-release
-        yum install -y curl unzip socat git
+        yum install -y curl unzip socat git build-essential
     fi
 fi
 # 检查安装结果
