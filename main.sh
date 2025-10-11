@@ -1206,6 +1206,8 @@ deploy_all() {
 }
 
 delete_xui() {
+    systemctl stop x-ui.service
+    systemctl disable x-ui.service
     rm -rf /usr/local/x-ui
     rm -rf /usr/local/bin/x-ui
     rm -rf /etc/systemd/system/x-ui.service
@@ -1213,12 +1215,16 @@ delete_xui() {
 }
 
 delete_douyin_recorder() {
+    systemctl stop douyinrecorder.service
+    systemctl disable douyinrecorder.service
     rm -rf /root/DouyinLiveRecorder
     rm -rf /etc/systemd/system/douyinrecorder.service
     rm -rf /root/logs/douyinrecorder.log
 }
 
 delete_autoupload() {
+    systemctl stop baidupcs-go.service
+    systemctl disable baidupcs-go.service
     rm -rf /usr/local/bin/BaiduPCS-Go
     rm -rf /etc/systemd/system/baidupcs-go.service
     rm -rf /root/logs/pcs_upload.log
