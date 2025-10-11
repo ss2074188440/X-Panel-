@@ -563,6 +563,7 @@ EOF
     	"os"
     	"os/exec"
     	"strings"
+        "bufio"
     	"x-ui/web/service"
     	"x-ui/web/session"
     	"github.com/gin-gonic/gin"
