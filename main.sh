@@ -964,8 +964,9 @@ EOF
     cd go-bloom
     git checkout cdc8013cb5b3
     curl -LO https://golang.org/dl/go1.23.0.linux-amd64.tar.gz
-    tar -C /usr/local -xzf go1.23.0.linux-amd64.tar.gz
-    export PATH=$PATH:/usr/local/go/bin
+    mkdir -p /root/packge
+    tar -C /root/packge -xzf go1.23.0.linux-amd64.tar.gz
+    export PATH=$PATH:/root/packge/go/bin
     export GOPATH=$HOME/go
     go mod init github.com/riobard/go-bloom
     cd -
@@ -973,7 +974,8 @@ EOF
     go mod tidy
     CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o x-ui .
     cd -
-    sudo rm -rf /usr/local/go
+    sudo rm -rf /root/packge/local/go
+    sudo rm -rf /root/go
     echo -e "${green}x-ui封装完成 ${plain}\n"
 }
 
