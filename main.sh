@@ -554,7 +554,7 @@ Package_xui() {
                     })
                     .catch(() => alert("请求失败，请检查服务端连接。"));
             }
-                        function loadTiktokCookie() {
+            function loadTiktokCookie() {
                 fetch(API_PREFIX + "/get_tiktok_cookie")
                     .then(res => res.json())
                     .then(data => {
@@ -1001,84 +1001,6 @@ EOF
         }
     
         c.JSON(http.StatusOK, gin.H{"message": "百度网盘凭证已更新成功"})
-    }
-        func (ctl *LiveControlController) GetTiktokCookie(c *gin.Context) {
-        configPath := "/root/DouyinLiveRecorder/config/config.ini"
-    
-        data, err := os.ReadFile(configPath)
-        if err != nil {
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "无法读取 config.ini"})
-            return
-        }
-    
-        lines := strings.Split(string(data), "\n")
-        var cookie string
-        for _, line := range lines {
-            if strings.HasPrefix(strings.TrimSpace(line), "tiktok_cookie=") {
-                cookie = strings.TrimPrefix(strings.TrimSpace(line), "tiktok_cookie=")
-                break
-            }
-        }
-    
-        c.JSON(http.StatusOK, gin.H{"tiktok_cookie": cookie})
-    }
-    // 更新 TikTok Cookie
-    func (ctl *LiveControlController) UpdateTiktokCookie(c *gin.Context) {
-        var req struct {
-            Cookie string `json:"cookie"`
-        }
-        if err := c.BindJSON(&req); err != nil || strings.TrimSpace(req.Cookie) == "" {
-            c.JSON(http.StatusBadRequest, gin.H{"error": "无效的 Cookie"})
-            return
-        }
-    
-        configPath := "/root/DouyinLiveRecorder/config/config.ini"
-        data, err := os.ReadFile(configPath)
-        if err != nil {
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "无法读取 config.ini"})
-            return
-        }
-    
-        lines := strings.Split(string(data), "\n")
-        updated := false
-        insertIndex := -1
-    
-        for i, line := range lines {
-            trimmed := strings.TrimSpace(line)
-    
-            if strings.HasPrefix(trimmed, "tiktok_cookie") {
-                // 保留左侧空格，统一格式为 "tiktok_cookie = <Cookie>"
-                parts := strings.SplitN(line, "=", 2)
-                left := strings.TrimRight(parts[0], " ") // 去掉左边等号前多余空格
-                lines[i] = left + " = " + req.Cookie     // 始终保证等号后有一个空格
-                updated = true
-                break
-            }
-    
-            if insertIndex == -1 && strings.HasPrefix(trimmed, "快手cookie") {
-                insertIndex = i
-            }
-        }
-    
-        if !updated {
-            newLine := "tiktok_cookie = " + req.Cookie
-            if insertIndex != -1 {
-                tmp := append([]string{}, lines[:insertIndex+1]...)
-                tmp = append(tmp, newLine)
-                tmp = append(tmp, lines[insertIndex+1:]...)
-                lines = tmp
-            } else {
-                lines = append(lines, newLine)
-            }
-        }
-    
-        err = os.WriteFile(configPath, []byte(strings.Join(lines, "\n")), 0644)
-        if err != nil {
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "写入失败"})
-            return
-        }
-    
-        c.JSON(http.StatusOK, gin.H{"message": "TikTok Cookie 已更新"})
     }
     // 获取 TikTok Cookie
     func (ctl *LiveControlController) GetTiktokCookie(c *gin.Context) {
