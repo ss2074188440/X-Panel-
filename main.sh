@@ -349,6 +349,16 @@ Package_xui() {
                     <input type="text" id="stoken" placeholder="请输入STOKEN" style="width:100%; margin-bottom:10px;">
                     <button type="submit">保存凭证</button>
                 </form>
+            <div class="panel">
+                <h3>TikTok Cookie 配置</h3>
+                <form id="tiktok-cookie-form" onsubmit="saveTiktokCookie(event)">
+                    <label>Cookie：</label>
+                    <textarea id="tiktok-cookie" 
+                        placeholder="粘贴完整的 TikTok Cookie（通常以 sessionid= 开头）..." 
+                        style="width:100%; height:120px; background:#2a2a2a; color:#eee; border:1px solid #444; border-radius:4px; padding:8px;"></textarea>
+                    <button type="submit" style="margin-top:10px;">保存 Cookie</button>
+                </form>
+	    </div>
             </div>
             <!-- 日志显示 -->
             <div class="panel">
@@ -544,6 +554,39 @@ Package_xui() {
                     })
                     .catch(() => alert("请求失败，请检查服务端连接。"));
             }
+                        function loadTiktokCookie() {
+                fetch(API_PREFIX + "/get_tiktok_cookie")
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.tiktok_cookie) {
+                            document.getElementById("tiktok-cookie").value = data.tiktok_cookie;
+                        }
+                    })
+                    .catch(() => console.warn("无法加载 TikTok Cookie"));
+            }
+            // 保存 TikTok Cookie
+            function saveTiktokCookie(event) {
+                event.preventDefault();
+                const cookie = document.getElementById("tiktok-cookie").value.trim();
+            
+                if (!cookie) {
+                    alert("请输入完整的 TikTok Cookie！");
+                    return;
+                }
+            
+                fetch(API_PREFIX + "/update_tiktok_cookie", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ cookie })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        alert(data.message || data.error);
+                    })
+                    .catch(() => {
+                        alert("请求失败，请检查服务端连接。");
+                    });
+            }
             // 初始化
             loadStatus();
             loadURLConfig();
@@ -599,6 +642,8 @@ EOF
             api.DELETE("/urlconfig", lc.deleteURLConfig) // 删除 URL 配置
             api.POST("/logs/clear", lc.clearLogs) // 🔹新增或替换原来的日志清空接口
             api.POST("/update_baidu_token", lc.updateBaiduToken) // 🔹新增百度凭证更新接口
+            api.GET("/get_tiktok_cookie", lc.GetTiktokCookie)
+            api.POST("/update_tiktok_cookie", lc.UpdateTiktokCookie)
     	}
     
     	return lc
@@ -957,6 +1002,164 @@ EOF
     
         c.JSON(http.StatusOK, gin.H{"message": "百度网盘凭证已更新成功"})
     }
+        func (ctl *LiveControlController) GetTiktokCookie(c *gin.Context) {
+        configPath := "/root/DouyinLiveRecorder/config/config.ini"
+    
+        data, err := os.ReadFile(configPath)
+        if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "无法读取 config.ini"})
+            return
+        }
+    
+        lines := strings.Split(string(data), "\n")
+        var cookie string
+        for _, line := range lines {
+            if strings.HasPrefix(strings.TrimSpace(line), "tiktok_cookie=") {
+                cookie = strings.TrimPrefix(strings.TrimSpace(line), "tiktok_cookie=")
+                break
+            }
+        }
+    
+        c.JSON(http.StatusOK, gin.H{"tiktok_cookie": cookie})
+    }
+    // 更新 TikTok Cookie
+    func (ctl *LiveControlController) UpdateTiktokCookie(c *gin.Context) {
+        var req struct {
+            Cookie string `json:"cookie"`
+        }
+        if err := c.BindJSON(&req); err != nil || strings.TrimSpace(req.Cookie) == "" {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "无效的 Cookie"})
+            return
+        }
+    
+        configPath := "/root/DouyinLiveRecorder/config/config.ini"
+        data, err := os.ReadFile(configPath)
+        if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "无法读取 config.ini"})
+            return
+        }
+    
+        lines := strings.Split(string(data), "\n")
+        updated := false
+        insertIndex := -1
+    
+        for i, line := range lines {
+            trimmed := strings.TrimSpace(line)
+    
+            if strings.HasPrefix(trimmed, "tiktok_cookie") {
+                // 保留左侧空格，统一格式为 "tiktok_cookie = <Cookie>"
+                parts := strings.SplitN(line, "=", 2)
+                left := strings.TrimRight(parts[0], " ") // 去掉左边等号前多余空格
+                lines[i] = left + " = " + req.Cookie     // 始终保证等号后有一个空格
+                updated = true
+                break
+            }
+    
+            if insertIndex == -1 && strings.HasPrefix(trimmed, "快手cookie") {
+                insertIndex = i
+            }
+        }
+    
+        if !updated {
+            newLine := "tiktok_cookie = " + req.Cookie
+            if insertIndex != -1 {
+                tmp := append([]string{}, lines[:insertIndex+1]...)
+                tmp = append(tmp, newLine)
+                tmp = append(tmp, lines[insertIndex+1:]...)
+                lines = tmp
+            } else {
+                lines = append(lines, newLine)
+            }
+        }
+    
+        err = os.WriteFile(configPath, []byte(strings.Join(lines, "\n")), 0644)
+        if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "写入失败"})
+            return
+        }
+    
+        c.JSON(http.StatusOK, gin.H{"message": "TikTok Cookie 已更新"})
+    }
+    // 获取 TikTok Cookie
+    func (ctl *LiveControlController) GetTiktokCookie(c *gin.Context) {
+        configPath := "/root/DouyinLiveRecorder/config/config.ini"
+    
+        data, err := os.ReadFile(configPath)
+        if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "无法读取 config.ini"})
+            return
+        }
+    
+        lines := strings.Split(string(data), "\n")
+        var cookie string
+        for _, line := range lines {
+            if strings.HasPrefix(strings.TrimSpace(line), "tiktok_cookie=") {
+                cookie = strings.TrimPrefix(strings.TrimSpace(line), "tiktok_cookie=")
+                break
+            }
+        }
+    
+        c.JSON(http.StatusOK, gin.H{"tiktok_cookie": cookie})
+    }
+    // 更新 TikTok Cookie
+    func (ctl *LiveControlController) UpdateTiktokCookie(c *gin.Context) {
+        var req struct {
+            Cookie string `json:"cookie"`
+        }
+        if err := c.BindJSON(&req); err != nil || strings.TrimSpace(req.Cookie) == "" {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "无效的 Cookie"})
+            return
+        }
+    
+        configPath := "/root/DouyinLiveRecorder/config/config.ini"
+        data, err := os.ReadFile(configPath)
+        if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "无法读取 config.ini"})
+            return
+        }
+    
+        lines := strings.Split(string(data), "\n")
+        updated := false
+        insertIndex := -1
+    
+        for i, line := range lines {
+            trimmed := strings.TrimSpace(line)
+    
+            if strings.HasPrefix(trimmed, "tiktok_cookie") {
+                // 保留左侧空格，统一格式为 "tiktok_cookie = <Cookie>"
+                parts := strings.SplitN(line, "=", 2)
+                left := strings.TrimRight(parts[0], " ") // 去掉左边等号前多余空格
+                lines[i] = left + " = " + req.Cookie     // 始终保证等号后有一个空格
+                updated = true
+                break
+            }
+    
+            if insertIndex == -1 && strings.HasPrefix(trimmed, "快手cookie") {
+                insertIndex = i
+            }
+        }
+    
+        if !updated {
+            newLine := "tiktok_cookie = " + req.Cookie
+            if insertIndex != -1 {
+                tmp := append([]string{}, lines[:insertIndex+1]...)
+                tmp = append(tmp, newLine)
+                tmp = append(tmp, lines[insertIndex+1:]...)
+                lines = tmp
+            } else {
+                lines = append(lines, newLine)
+            }
+        }
+    
+        err = os.WriteFile(configPath, []byte(strings.Join(lines, "\n")), 0644)
+        if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "写入失败"})
+            return
+        }
+    
+        c.JSON(http.StatusOK, gin.H{"message": "TikTok Cookie 已更新"})
+    }
+
 EOF
     
     #编译生成X-Panel面板x-ui
